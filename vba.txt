@@ -1,0 +1,56 @@
+Sub ExtractUniqueStates()
+    Dim ws As Worksheet
+    Dim newWs As Worksheet
+    Dim lastRow As Long
+    Dim currentSchool As String
+    Dim schoolStates As Object
+    Dim cell As Range
+    Dim i As Long, j As Long
+    
+    ' Create a new worksheet for the results
+    Set ws = ThisWorkbook.Sheets("Page1_1")
+    Set newWs = ThisWorkbook.Sheets.Add(After:=ws)
+    newWs.Name = "Unique States"
+    
+    ' Initialize dictionary to store schools and their unique states
+    Set schoolStates = CreateObject("Scripting.Dictionary")
+    
+    ' Find the last row in the data
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    
+    ' Loop through the data
+    For i = 1 To lastRow
+        ' Check if the cell contains a school name
+        If InStr(ws.Cells(i, 1).Value, "Campus:") > 0 Then
+            currentSchool = Replace(ws.Cells(i, 1).Value, "Campus: ", "")
+        ElseIf Not IsEmpty(ws.Cells(i, 6).Value) And Not IsEmpty(currentSchool) Then
+            If Not schoolStates.exists(currentSchool) Then
+                schoolStates.Add currentSchool, CreateObject("Scripting.Dictionary")
+            End If
+            schoolStates(currentSchool)(ws.Cells(i, 6).Value) = 1
+        End If
+    Next i
+    
+    ' Write the results to the new worksheet
+    newWs.Cells(1, 1).Value = "School"
+    newWs.Cells(1, 2).Value = "Unique States"
+    
+    i = 2
+    For Each key In schoolStates.keys
+        newWs.Cells(i, 1).Value = key
+        For Each stateKey In schoolStates(key).keys
+            If newWs.Cells(i, 2).Value = "" Then
+                newWs.Cells(i, 2).Value = stateKey
+            Else
+                newWs.Cells(i, 2).Value = newWs.Cells(i, 2).Value & ", " & stateKey
+            End If
+        Next stateKey
+        i = i + 1
+    Next key
+    
+    ' Auto-fit columns
+    newWs.Columns("A:B").AutoFit
+    
+    ' Inform the user that the task is complete
+    MsgBox "Unique states by school have been extracted and saved to the 'Unique States' sheet.", vbInformation
+End Sub
